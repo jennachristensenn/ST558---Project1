@@ -1,0 +1,14 @@
+---
+title: "ST558 - Project 1"
+format: html
+editor: visual
+---
+
+## Project 1
+
+Main place to document narrative and finished code
+
+```{r}
+
+```
+
