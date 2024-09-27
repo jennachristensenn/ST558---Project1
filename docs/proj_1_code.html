@@ -102,6 +102,10 @@ ul.task-list li input[type="checkbox"] {
 <section id="project-1" class="level2">
 <h2 class="anchored" data-anchor-id="project-1">Project 1</h2>
 <p>Main place to document narrative and finished code</p>
+</section>
+<section id="fetching-data-from-the-census-api" class="level2">
+<h2 class="anchored" data-anchor-id="fetching-data-from-the-census-api">Fetching Data from the Census API</h2>
+<p>The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, and categorical variables as arguments. We check them and warn the user if their input is invalid.</p>
 
 
 </section>
