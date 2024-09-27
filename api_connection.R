@@ -1,6 +1,7 @@
 library(httr)
 library(jsonlite)
 library(dplyr)
+library(tidyverse)
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
@@ -35,8 +36,19 @@ parse_census_response <- function(census_raw){
   return(census_tbl_in_progress)
 }
 
-#added geography component 
+#added geography component & years check
 fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, cat_vars=DEFAULT_CAT_VARS, geo_vars = DEFAULT_GEO_VARS){
+  
+# years variable check: commented out -- casuing issues
+#  year_vars_checked <- years[years %in% AVAILABLE_YEARS]
+#  year_vars_failed <- years[!(years %in% AVAILABLE_YEARS)]
+#  if(length(year_vars_failed) > 0){warning("Invalid year variable(s) excluded: ", paste(year_vars_failed))}
+#  if(length(year_vars_checked) == 0){
+#    warning("No valid year variables supplied. Using default year 2022.")
+#    year_vars_checked = DEFAULT_YEARS
+#  }
+  
+  #numeric variables check
   num_vars_checked <- num_vars[num_vars %in% AVAILABLE_NUM_VARS]
   num_vars_failed <- num_vars[!(num_vars %in% AVAILABLE_NUM_VARS)]
   #changed parenthesis here
@@ -46,6 +58,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     num_vars_checked = DEFAULT_NUM_VARS
   }
   
+  #categorical variables check
   cat_vars_checked <- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
   cat_vars_failed <- cat_vars[!(cat_vars %in% AVAILABLE_CAT_VARS)]
   #changed parenthesis here
@@ -55,6 +68,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     cat_vars_checked = DEFAULT_CAT_VARS
   }
   
+  #geographic variables check
   geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
   geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
   if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
@@ -63,11 +77,14 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     geo_vars_checked = DEFAULT_GEO_VARS
   }
   
+  #attempting change to tibble
   querystring_var_list = paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
-  return(fetch_census_raw(varstring = querystring_var_list)$content |> 
-           parse_census_response())
+  parsed_data <- fetch_census_raw(varstring = querystring_var_list)$content |> 
+           parse_census_response()
+  parsed_data <- as_tibble(parsed_data)
+  return(parsed_data)
 }
 
-test <- fetch_census_data(num_vars = c("ABCD"), cat_vars = c("FER"), geo_vars = c("ST"))
+test <- fetch_census_data(num_vars = c("GASP"), cat_vars = c("FER"), geo_vars = c("ST"))
 
 
