@@ -28,8 +28,6 @@ fetch_census_raw <- function(year=2022, varstring=""){
 
 parse_census_response <- function(census_raw){
   census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
-  print(head(census_tbl_in_progress))
-  print(census_tbl_in_progress[-1])
   census_tbl <- as_tibble(census_tbl_in_progress[-1,])
   colnames(census_tbl) <- census_tbl_in_progress[1,]
   
@@ -55,6 +53,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   
   years_checked <- as.character(years)[years %in% AVAILABLE_YEARS]
   years_failed <- as.character(years)[!(years %in% AVAILABLE_YEARS)]
+  if(length(years_failed > 0)){warning("Invalid year(s) excluded: ", paste(years_failed))}
   if(length(years_checked) == 0){
     warning("No valid years supplied. Using default 2022.")
     years_checked = DEFAULT_CAT_VARS
@@ -63,11 +62,14 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   querystring_var_list <-  paste(num_vars_checked, cat_vars_checked, sep = ",")
   
   fetch_census_single_year <- function(year){
-    return(current_iter_response <- fetch_census_raw(varstring = querystring_var_list)$content |> 
-             parse_census_response())
+    current_iter_response <- fetch_census_raw(varstring = querystring_var_list)$content |> 
+      parse_census_response()
+    
+    current_iter_response$YEAR <- year
+    return(current_iter_response)
   }
   
   return(map_dfr(years, fetch_census_single_year))
 }
 
-test <- fetch_census_data(num_vars = c("ABCD"), cat_vars = c("FER"))
+test <- fetch_census_data(num_vars = c("ABCD"), cat_vars = c("FER"), years = c(2012, 2014, 2024))

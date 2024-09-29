@@ -14,4 +14,14 @@ Main place to document narrative and finished code
 
 ## Fetching Data from the Census API
 
-The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, and categorical variables as arguments. We check them and warn the user if their input is invalid.
+The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, categorical variables, and geographic options as arguments. We check them and warn the user if their input is invalid. Below is an example of the warning and check code we wrote.
+
+```         
+cat_vars_checked <- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
+cat_vars_failed <- cat_vars[!(cat_vars %in% AVAILABLE_CAT_VARS)]
+if(length(cat_vars_failed > 0)){warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))}
+if(length(num_vars_checked) == 0){
+  warning("No valid categorical variables supplied. Using default SEX.")
+  cat_vars_checked = DEFAULT_CAT_VARS
+}
+```
