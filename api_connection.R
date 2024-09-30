@@ -1,74 +1,73 @@
 library(httr)
 library(jsonlite)
 library(dplyr)
-library(tidyverse)
+library(purrr)
+library(tibble)
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
-PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP" #add state specification ST=02
+PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP"
 
 DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
 DEFAULT_NUM_VARS <- c("AGEP")
 DEFAULT_CAT_VARS <- c("SEX")
-#Adding in the geography component
-ALL_GEO <- c("REGION", "DIVISION", "ST")
-DEFAULT_GEO_VARS <- c("ALL_GEO")
+DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
-#account for lack of 2020 data on site
-AVAILABLE_YEARS <- c(seq(2010, 2019), seq(2021, 2022))
-AVAILABLE_NUM_VARS <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
-AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-#Adding in the geography component
-AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST", "ALL_GEO")
+#account for lack of 2020 data on site, then compare years as character for consistency
+AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
+AVAILABLE_NUM_VARS <- c("PWGPT", "AGEP", "GASP", "GRPIP", "JWMNP") #"JWAP", "JWDP", leaving out for numeric transformation
+AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
+AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
 fetch_census_raw <- function(year=2022, varstring=""){
   
   prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
   if(nchar(varstring) > 0){prepared_census_url <-  paste(prepared_census_url, varstring, sep = ",")}
   
+  print(prepared_census_url) #debugging
   return(GET(prepared_census_url))
 }
 
 parse_census_response <- function(census_raw){
   census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
+  census_tbl <- as_tibble(census_tbl_in_progress[-1,])
+  colnames(census_tbl) <- census_tbl_in_progress[1,]
   
-  return(census_tbl_in_progress)
+  num_col <- intersect(colnames(census_tbl), AVAILABLE_NUM_VARS)
+  census_tbl <- census_tbl |> 
+    mutate(across(all_of(num_col), as.numeric))
+  
+  class(census_tbl) <- c("census", class(census_tbl))
+  
+  return(census_tbl)
 }
 
-#added geography component & years check
 fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, cat_vars=DEFAULT_CAT_VARS, geo_vars = DEFAULT_GEO_VARS){
-  
-# years variable check: commented out -- casuing issues
-#  year_vars_checked <- years[years %in% AVAILABLE_YEARS]
-#  year_vars_failed <- years[!(years %in% AVAILABLE_YEARS)]
-#  if(length(year_vars_failed) > 0){warning("Invalid year variable(s) excluded: ", paste(year_vars_failed))}
-#  if(length(year_vars_checked) == 0){
-#    warning("No valid year variables supplied. Using default year 2022.")
-#    year_vars_checked = DEFAULT_YEARS
-#  }
-  
-  #numeric variables check
   num_vars_checked <- num_vars[num_vars %in% AVAILABLE_NUM_VARS]
   num_vars_failed <- num_vars[!(num_vars %in% AVAILABLE_NUM_VARS)]
-  #changed parenthesis here
-  if(length(num_vars_failed) > 0){warning("Invalid numeric variable(s) excluded: ", paste(num_vars_failed))}
+  if(length(num_vars_failed > 0)){warning("Invalid numeric variable(s) excluded: ", paste(num_vars_failed))}
   if(length(num_vars_checked) == 0){
     warning("No valid numeric variables supplied. Using default AGEP and PWGTP.")
     num_vars_checked = DEFAULT_NUM_VARS
   }
   
-  #categorical variables check
   cat_vars_checked <- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
   cat_vars_failed <- cat_vars[!(cat_vars %in% AVAILABLE_CAT_VARS)]
-  #changed parenthesis here
-  if(length(cat_vars_failed) > 0){warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))}
+  if(length(cat_vars_failed > 0)){warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))}
   if(length(num_vars_checked) == 0){
     warning("No valid categorical variables supplied. Using default SEX.")
     cat_vars_checked = DEFAULT_CAT_VARS
   }
   
-  #geographic variables check
+  years_checked <- as.character(years)[years %in% AVAILABLE_YEARS]
+  years_failed <- as.character(years)[!(years %in% AVAILABLE_YEARS)]
+  if(length(years_failed > 0)){warning("Invalid year(s) excluded: ", paste(years_failed))}
+  if(length(years_checked) == 0){
+    warning("No valid years supplied. Using default 2022.")
+    years_checked = DEFAULT_CAT_VARS
+  }
+  
   geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
   geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
   if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
@@ -77,14 +76,18 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     geo_vars_checked = DEFAULT_GEO_VARS
   }
   
-  #attempting change to tibble
-  querystring_var_list = paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
-  parsed_data <- fetch_census_raw(varstring = querystring_var_list)$content |> 
-           parse_census_response()
-  parsed_data <- as_tibble(parsed_data)
-  return(parsed_data)
+  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
+  
+  fetch_census_single_year <- function(year){
+    current_iter_response <- fetch_census_raw(year=year, varstring = querystring_var_list)$content |> 
+      parse_census_response()
+    
+    current_iter_response$YEAR <- year
+    return(current_iter_response)
+  }
+  
+  return(map_dfr(years_checked, fetch_census_single_year))
 }
 
-test <- fetch_census_data(num_vars = c("GASP"), cat_vars = c("FER"), geo_vars = c("ST"))
-
-
+test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER"), years = c(2012, 2014))
+print(head(test))
