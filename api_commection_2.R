@@ -6,7 +6,8 @@ library(tibble)
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
-PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP&for=state:02"
+PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP"
+#&forr=state:02
 
 DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
@@ -32,6 +33,7 @@ fetch_census_raw <- function(year=2022, varstring="", geo_vars = "state:02"){
   prepared_census_url <- paste(prepared_census_url, "&for=", geo_vars, sep = "")
   
   response <- GET(prepared_census_url)
+  
   if (http_error(response)) {
     stop("Failed to fetch data from the API. Check query and internet connection.")
   }  
@@ -87,7 +89,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked, years_checked), collapse = ",") 
   
   fetch_census_single_year <- function(year) {
-    current_iter_response <- fetch_census_raw(year, varstring = querystring_var_list, geo_vars = geo_vars_checked)$content
+    current_iter_response <- fetch_census_raw(year, varstring = querystring_var_list)$content
     parse_census_response(current_iter_response)
   }
   

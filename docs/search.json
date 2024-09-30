@@ -1,26 +1,5 @@
 [
   {
-    "objectID": "ST558-Project1/proj_1_code.html",
-    "href": "ST558-Project1/proj_1_code.html",
-    "title": "ST558 - Project 1",
-    "section": "",
-    "text": "Main place to document narrative and finished code"
-  },
-  {
-    "objectID": "ST558-Project1/proj_1_code.html#project-1",
-    "href": "ST558-Project1/proj_1_code.html#project-1",
-    "title": "ST558 - Project 1",
-    "section": "",
-    "text": "Main place to document narrative and finished code"
-  },
-  {
-    "objectID": "ST558-Project1/proj_1_code.html#fetching-data-from-the-census-api",
-    "href": "ST558-Project1/proj_1_code.html#fetching-data-from-the-census-api",
-    "title": "ST558 - Project 1",
-    "section": "Fetching Data from the Census API",
-    "text": "Fetching Data from the Census API\nThe Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, and categorical variables as arguments. We check them and warn the user if their input is invalid."
-  },
-  {
     "objectID": "proj_1_code.html",
     "href": "proj_1_code.html",
     "title": "ST558 - Project 1",
