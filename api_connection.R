@@ -16,7 +16,7 @@ DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
-AVAILABLE_NUM_VARS <- c("PWGPT", "AGEP", "GASP", "GRPIP", "JWMNP") #"JWAP", "JWDP", leaving out for numeric transformation
+AVAILABLE_NUM_VARS <- c("PWGTP", "AGEP", "GASP", "GRPIP", "JWMNP") #"JWAP", "JWDP", leaving out for numeric transformation
 AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
@@ -91,3 +91,9 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
 
 test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER"), years = c(2012, 2014))
 print(head(test))
+
+summary.census <- function(cencus_tbl, num_vars){
+  weight_vector <- "PWGPT"
+  sum_list <- list()
+  
+}
