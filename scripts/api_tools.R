@@ -12,8 +12,7 @@ DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
 DEFAULT_NUM_VARS <- c("AGEP")
 DEFAULT_CAT_VARS <- c("SEX")
-ALL_GEO <- c("REGION", "DIVISION", "ST")
-DEFAULT_GEO_VARS <- c("ST")
+DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
@@ -71,7 +70,9 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     geo_vars_checked = DEFAULT_GEO_VARS
   }
   
-  querystring_var_list <-  paste(num_vars_checked, cat_vars_checked, geo_vars_checked, sep = ",")
+  test_1 <- paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), sep=",")
+  print(test)
+  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), sep = ",")
   
   fetch_census_single_year <- function(year){
     current_iter_response <- fetch_census_raw(year=year, varstring = querystring_var_list)$content |> 
