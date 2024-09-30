@@ -7,6 +7,7 @@ library(tibble)
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
 PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP"
+#need 02 to be default but not contradict the geo specification, need to add this to default 
 
 DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
@@ -16,7 +17,7 @@ DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
-AVAILABLE_NUM_VARS <- c("PWGTP", "AGEP", "GASP", "GRPIP", "JWMNP") #"JWAP", "JWDP", leaving out for numeric transformation
+AVAILABLE_NUM_VARS <- c("PWGTP", "AGEP", "GASP", "JWAP", "JWDP", "GRPIP", "JWMNP") 
 AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
@@ -35,8 +36,10 @@ parse_census_response <- function(census_raw){
   colnames(census_tbl) <- census_tbl_in_progress[1,]
   
   num_col <- intersect(colnames(census_tbl), AVAILABLE_NUM_VARS)
+  cat_col <- intersect(colnames(census_tbl), AVAILABLE_CAT_VARS)
   census_tbl <- census_tbl |> 
-    mutate(across(all_of(num_col), as.numeric))
+    mutate(across(all_of(num_col), as.numeric),
+           across(all_of(cat_col), as.factor))
   
   class(census_tbl) <- c("census", class(census_tbl))
   
@@ -90,6 +93,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
 }
 
 test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER"), years = c(2012, 2014))
+
 print(head(test))
 
 summary.census <- function(cencus_tbl, num_vars){
