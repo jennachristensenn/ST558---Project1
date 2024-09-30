@@ -70,9 +70,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     geo_vars_checked = DEFAULT_GEO_VARS
   }
   
-  test_1 <- paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), sep=",")
-  print(test)
-  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), sep = ",")
+  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
   
   fetch_census_single_year <- function(year){
     current_iter_response <- fetch_census_raw(year=year, varstring = querystring_var_list)$content |> 
