@@ -18,7 +18,7 @@ DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
 AVAILABLE_NUM_VARS <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
 AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
-AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST", "ALL_GEO")
+AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
  
 fetch_census_raw <- function(year=2022, varstring=""){
   
@@ -31,8 +31,16 @@ fetch_census_raw <- function(year=2022, varstring=""){
 
 parse_census_response <- function(census_raw){
   census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
-  census_tbl <- as_tibble(census_tbl_in_progress[-1,])
+  census_tbl <- as_tibble(census_tbl_in_progress[-1,]) 
   colnames(census_tbl) <- census_tbl_in_progress[1,]
+  
+  num_col <- intersect(colnames(census_tbl), AVAILABLE_NUM_VARS)
+  cat_col <- intersect(colnames(census_tbl), AVAILABLE_CAT_VARS)
+  census_tbl <- census_tbl |> 
+    mutate(across(all_of(num_col), as.numeric),
+           across(all_of(cat_col), as.factor))
+  
+  class(census_tbl) <- c("census", class(census_tbl))
   
   return(census_tbl)
 }
@@ -76,11 +84,11 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     current_iter_response <- fetch_census_raw(year=year, varstring = querystring_var_list)$content |> 
       parse_census_response()
     
-    current_iter_response$YEAR <- year
+    current_iter_response$YEAR <- as.numeric(year)
     return(current_iter_response)
   }
   
   return(map_dfr(years_checked, fetch_census_single_year))
 }
 
-test <- fetch_census_data(num_vars = c("ABCD"), cat_vars = c("FER"), years = c(2012, 2014, 2024))
+test <- fetch_census_data(num_vars = c("JWDP"), cat_vars = c("FER"), years = c(2012, 2014, 2024))
