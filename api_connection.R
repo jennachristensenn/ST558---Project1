@@ -6,7 +6,7 @@ library(tibble)
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
-PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP" #?for=state:02&get=PWGTP
+PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP" #?for=state:02&get=PWGTP
 #need 02 to be default but not contradict the geo specification, need to add this to default 
 
 DEFAULT_YEARS <- c(2022)
@@ -93,32 +93,32 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   if(length(years_failed > 0)){warning("Invalid year(s) excluded: ", paste(years_failed))}
   if(length(years_checked) == 0){
     warning("No valid years supplied. Using default 2022.")
-    years_checked = DEFAULT_CAT_VARS
+    years_checked = DEFAULT_YEARS
   }
   
   
-  if(is.null(geo_vars)) {
-    geo_vars <- c(paste0("state:", DEFAULT_STATE))
-  } else {
-    geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
-    geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
-    if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
-    if(length(geo_vars_checked) == 0){
-      warning("No valid geographic variables supplied. Using default ALL.")}
-      else {geo_vars <- c(paste0("state:", DEFAULT_STATE))
-    }
+  # if(is.null(geo_vars)) {
+  #   geo_vars <- c(paste0("state:", DEFAULT_STATE))
+  # } else {
+  #   geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
+  #   geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
+  #   if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
+  #   if(length(geo_vars_checked) == 0){
+  #     warning("No valid geographic variables supplied. Using default ALL.")}
+  #     else {geo_vars <- c(paste0("state:", DEFAULT_STATE))
+  #   }
+  # }
+  
+
+  geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
+  geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
+  if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
+  if(length(geo_vars_checked) == 0){
+  warning("No valid geographic variables supplied. Using default ALL.")
+  geo_vars_checked = DEFAULT_GEO_VARS
   }
   
-  #
-  #geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
-  #geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
-  #if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
-  #if(length(geo_vars_checked) == 0){
-   # warning("No valid geographic variables supplied. Using default ALL.")
-    #geo_vars_checked = DEFAULT_GEO_VARS
-  #}
-  
-  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars), collapse = ",")
+  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
   
   cat_var_labels <- extract_multiple_var_mappings(cat_vars_checked)
   
@@ -145,7 +145,7 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   return(map_dfr(years_checked, fetch_census_single_year))
 }
 
-test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "SEX"), years = c(2022))
+test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "SEX"), years = c(2015, 2022))
 
 print(head(test))
 

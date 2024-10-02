@@ -1,18 +1,28 @@
 library(ggplot2)
+library(dplyr)
 
 #writing the summary function 
 
-summary.census <- function(test, num_vars = num_vars_checked, cat_vars = cat_vars_checked){
-  weight_vector <- "PWGPT"
-  sum_list <- list()
+summary.census <- function(census_tbl = test, cat_vars){ #num_vars,
   
-  sample_mean <- sum(num_vars*weight_vector)/sum(weight_vector)
+
   
-  sample_sd <- sqrt(sum(num_vars*weight_vector)/sum(weight_vector)-sample_meanˆ2)
+  cat_summary <- census_tbl |>
+    group_by(across(all_of(cat_vars))) |>
+    summarize(count = n()) |>
+    ungroup() |>
+    list() 
   
-  return(list(sample_mean = sample_mean, sample_sd = sample_sd))
+  values_list <- c(cat_summary) #num_summary,
+  
+  return(values_list)
   
 }
+
+test_summary <- summary.census(test, c("FER", "SEX"))
+print(test_summary)
+
+
 
 
 
