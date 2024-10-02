@@ -6,14 +6,15 @@ library(tibble)
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
-PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP"
+PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP" #?for=state:02&get=PWGTP
 #need 02 to be default but not contradict the geo specification, need to add this to default 
 
 DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
 DEFAULT_NUM_VARS <- c("AGEP")
 DEFAULT_CAT_VARS <- c("SEX")
-DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
+DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST") 
+DEFAULT_STATE <- "02"
 
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
@@ -28,7 +29,7 @@ extract_var_mapping <- function(var_name){
   endpoint_url <- paste0(VAR_URL_STUB, var_name, ".json")
   response <- GET(endpoint_url) 
   mapping_raw <- rawToChar(response$content)
-  print(mapping_raw)
+  #print(mapping_raw)
   mapping <- fromJSON(mapping_raw)
   return(mapping$values$item)
 }
@@ -52,6 +53,8 @@ fetch_census_raw <- function(year=2022, varstring=""){
   return(GET(prepared_census_url))
 }
 
+#fetch_census_raw()
+
 parse_census_response <- function(census_raw){
   census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
   census_tbl <- as_tibble(census_tbl_in_progress[-1,])
@@ -68,7 +71,7 @@ parse_census_response <- function(census_raw){
   return(census_tbl)
 }
 
-fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, cat_vars=DEFAULT_CAT_VARS, geo_vars = DEFAULT_GEO_VARS){
+fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, cat_vars=DEFAULT_CAT_VARS, geo_vars = NULL){
   num_vars_checked <- num_vars[num_vars %in% AVAILABLE_NUM_VARS]
   num_vars_failed <- num_vars[!(num_vars %in% AVAILABLE_NUM_VARS)]
   if(length(num_vars_failed > 0)){warning("Invalid numeric variable(s) excluded: ", paste(num_vars_failed))}
@@ -93,15 +96,29 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
     years_checked = DEFAULT_CAT_VARS
   }
   
-  geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
-  geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
-  if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
-  if(length(geo_vars_checked) == 0){
-    warning("No valid geographic variables supplied. Using default ALL.")
-    geo_vars_checked = DEFAULT_GEO_VARS
+  
+  if(is.null(geo_vars)) {
+    geo_vars <- c(paste0("state:", DEFAULT_STATE))
+  } else {
+    geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
+    geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
+    if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
+    if(length(geo_vars_checked) == 0){
+      warning("No valid geographic variables supplied. Using default ALL.")}
+      else {geo_vars <- c(paste0("state:", DEFAULT_STATE))
+    }
   }
   
-  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars_checked), collapse = ",")
+  #
+  #geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
+  #geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
+  #if(length(geo_vars_failed) > 0){warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))}
+  #if(length(geo_vars_checked) == 0){
+   # warning("No valid geographic variables supplied. Using default ALL.")
+    #geo_vars_checked = DEFAULT_GEO_VARS
+  #}
+  
+  querystring_var_list <-  paste(c(num_vars_checked, cat_vars_checked, geo_vars), collapse = ",")
   
   cat_var_labels <- extract_multiple_var_mappings(cat_vars_checked)
   
@@ -117,8 +134,8 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
         current_iter_response[[cat_var]] <- factor(current_iter_response[[cat_var]], 
                                                    levels = names(cat_var_labels[[cat_var]]),
                                                    labels = cat_var_labels[[cat_var]])
-        print(names(cat_var_labels[[cat_var]]))
-        print(cat_var_labels[[cat_var]])
+        #print(names(cat_var_labels[[cat_var]]))
+        #print(cat_var_labels[[cat_var]])
       }
     }
     
@@ -128,13 +145,8 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   return(map_dfr(years_checked, fetch_census_single_year))
 }
 
-#Add in NA's if variabe isn't compatible with year
-test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX"), years = c(2022))
+test <- fetch_census_data(num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "SEX"), years = c(2022))
 
 print(head(test))
 
-summary.census <- function(cencus_tbl, num_vars){
-  weight_vector <- "PWGPT"
-  sum_list <- list()
-  
-}
+#Add in NA's if variabe isn't compatible with year
