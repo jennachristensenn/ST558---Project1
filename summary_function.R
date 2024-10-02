@@ -3,23 +3,32 @@ library(dplyr)
 
 #writing the summary function 
 
-summary.census <- function(census_tbl = test, cat_vars){ #num_vars,
+summary.census <- function(census_tbl = test, num_vars, cat_vars){ 
   
-
+  num_summary <- census_tbl |>
+    mutate(across(all_of(num_vars),
+                  .fns = list(
+                    mean = function(x) {sum(x * PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE)},
+                    sd = function(x) {sqrt(sum(x^2 * PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE) - 
+                           (sum(x * PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE))^2)}),
+                    .names = "{.col}_{.fn}")) |>
+    list()
   
   cat_summary <- census_tbl |>
     group_by(across(all_of(cat_vars))) |>
     summarize(count = n()) |>
-    ungroup() |>
+    #ungroup() |>
     list() 
   
-  values_list <- c(cat_summary) #num_summary,
+  values_list <- list(
+    "Numeric Variable Summary" = num_summary, 
+    "Categorical Variable Counts" = cat_summary) 
   
   return(values_list)
   
 }
 
-test_summary <- summary.census(test, c("FER", "SEX"))
+test_summary <- summary.census(test, num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "SEX"))
 print(test_summary)
 
 
