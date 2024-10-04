@@ -4,6 +4,8 @@ library(dplyr)
 library(purrr)
 library(tibble)
 
+source("./scripts/cat_var_mapping_tools.R")
+
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
 PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP"
@@ -17,7 +19,8 @@ DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
 AVAILABLE_NUM_VARS <- c("AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP")
-AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWAP", "JWDP", "JWTRNS", "SCH", "SCHL", "SEX")
+AVAILABLE_TIME_VARS <- c("JWAP", "JWDP")
+AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
  
 fetch_census_raw <- function(year=2022, varstring=""){
@@ -25,7 +28,6 @@ fetch_census_raw <- function(year=2022, varstring=""){
   prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
   if(nchar(varstring) > 0){prepared_census_url <-  paste(prepared_census_url, varstring, sep = ",")}
     
-  print(prepared_census_url)
   return(GET(prepared_census_url))
 }
 
@@ -35,10 +37,12 @@ parse_census_response <- function(census_raw){
   colnames(census_tbl) <- census_tbl_in_progress[1,]
   
   num_col <- intersect(colnames(census_tbl), AVAILABLE_NUM_VARS)
+  time_col <- intersect(colnames(census_tbl), AVAILABLE_TIME_VARS)
   cat_col <- intersect(colnames(census_tbl), AVAILABLE_CAT_VARS)
   census_tbl <- census_tbl |> 
     mutate(across(all_of(num_col), as.numeric),
-           across(all_of(cat_col), as.factor))
+           across(all_of(time_col), ~ as.numeric(convert_census_time_strings(.x, cur_column()))),
+           across(all_of(cat_col), ~ factorize_column(.x, cur_column())))
   
   class(census_tbl) <- c("census", class(census_tbl))
   
