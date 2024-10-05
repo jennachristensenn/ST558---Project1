@@ -27,8 +27,17 @@ fetch_census_raw <- function(year=2022, varstring=""){
   
   prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
   if(nchar(varstring) > 0){prepared_census_url <-  paste(prepared_census_url, varstring, sep = ",")}
-    
-  return(GET(prepared_census_url))
+  
+  census_resp <-GET(prepared_census_url)  
+  
+  if(census_resp$status_code != 200){
+    stop(paste("One or more selected variables is not included in the years you have selected. Please consult the census microdata documentation to be sure the years you select support your chosen variables. The API response for year ", 
+               year, 
+               "failed to recognize variable", 
+               strsplit(rawToChar(census_resp$content), " ")[[1]][5]))
+  }
+  
+  return(census_resp$content)
 }
 
 parse_census_response <- function(census_raw){
@@ -95,4 +104,4 @@ fetch_census_data <- function(years=DEFAULT_YEARS, num_vars=DEFAULT_NUM_VARS, ca
   return(map_dfr(years_checked, fetch_census_single_year))
 }
 
-test <- fetch_census_data(num_vars = c("JWDP"), cat_vars = c("FER"), years = c(2012, 2014, 2024))
+test <- fetch_census_data(num_vars = c("JWDP"), cat_vars = c("HISPEED"), years = c(2012))
