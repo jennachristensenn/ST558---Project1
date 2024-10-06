@@ -9,7 +9,8 @@ editor: visual
 Main place to document narrative and finished code
 
 ```{r}
-
+source("./scripts/api_tools.R")
+source("./summary_function.R")
 ```
 
 ## Fetching Data from the Census API
@@ -19,7 +20,9 @@ The Census microdata API has a pretty straightforward endpoint. We make a GET re
 ```         
 cat_vars_checked <- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
 cat_vars_failed <- cat_vars[!(cat_vars %in% AVAILABLE_CAT_VARS)]
-if(length(cat_vars_failed > 0)){warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))}
+if(length(cat_vars_failed > 0)){
+  warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))
+}
 if(length(num_vars_checked) == 0){
   warning("No valid categorical variables supplied. Using default SEX.")
   cat_vars_checked = DEFAULT_CAT_VARS
