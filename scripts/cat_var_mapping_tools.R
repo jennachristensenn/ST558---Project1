@@ -7,8 +7,7 @@ vAR_URL_STUB = "https://api.census.gov/data/2022/acs/acs1/pums/variables/"
 
 #it probably doesn't make much sense to use JWDP as default, so we can change
 extract_var_mappings <- function(var_name="JWDP"){
-  var_resp = NULL
-  try({var_resp <- GET(paste(vAR_URL_STUB, var_name, ".json", sep = ""))}) 
+  var_resp <- GET(paste(vAR_URL_STUB, var_name, ".json", sep = ""))
 
   mapping_raw=var_resp$content
   mapping <- fromJSON(rawToChar(mapping_raw))$values$item
@@ -39,10 +38,6 @@ convert_census_time_strings <- function(strings, var){
 
 factorize_column <- function(strings, var){
   mapping <- extract_var_mappings(var)
-  
-  if(is.null(mapping)){
-    return(rep_len(NA_character_, length(strings)))
-  }
   
   return(factor(strings, levels = names(mapping), labels = as.character(mapping)))
 }

@@ -6,16 +6,18 @@ editor: visual
 
 ## Project 1
 
-Main place to document narrative and finished code
+#### Jenna Christensen and Matthew Wasyluk
+
+In this project, we use the US Census Microdata API to test our knowledge of API querying, data manipulation in Tidyverse, and other related tools and skills in R. We'll begin by importing the script files where we wrote our code.
 
 ```{r}
 source("./scripts/api_tools.R")
-source("./summary_function.R")
+source("./scripts/summary_function.R")
 ```
 
 ## Fetching Data from the Census API
 
-The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, categorical variables, and geographic options as arguments. We check them and warn the user if their input is invalid. Below is an example of the warning and check code we wrote.
+The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables and geographic levels to return. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, categorical variables, and geographic options as arguments. We check them and warn the user if their input is invalid. Below is an example of the warning and check code we wrote.
 
 ```         
 cat_vars_checked <- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
@@ -27,4 +29,92 @@ if(length(num_vars_checked) == 0){
   warning("No valid categorical variables supplied. Using default SEX.")
   cat_vars_checked = DEFAULT_CAT_VARS
 }
+```
+
+And here is a portion of our code that builds the URL. It combines several strings that are placed using user input.
+
+```         
+prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
+if(nchar(varstring) > 0){prepared_census_url <-  paste(prepared_census_url, varstring, sep = ",")}
+if (nchar(geo_subset) > 0) {prepared_census_url <- paste(prepared_census_url, "&", geo_subset, sep = "")}
+```
+
+Once fetched, the raw JSON response has to be decoded and parsed into a list. We can turn it into a tibble from there.
+
+```         
+census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
+census_tbl <- as_tibble(census_tbl_in_progress[-1,]) 
+colnames(census_tbl) <- census_tbl_in_progress[1,]
+```
+
+The next step is formatting the variables appropriately. Dplyr helps a lot here.
+
+```         
+census_tbl <- census_tbl |> 
+  mutate(across(all_of(num_col), as.numeric),
+         across(all_of(time_col), ~ as.numeric(convert_census_time_strings(.x, cur_column()))),
+         across(all_of(cat_col), ~ factorize_column(.x, cur_column())))
+```
+
+Factorize_column and convert_census_time_strings are custom functions that return factors and numeric 24-hour times as hhmm, respectively. They are defined along with some helper functions in /scripts/cat_var_mapping_tools.R. We'll get to that later in this document.
+
+In all of this, we set defaults where appropriate. The user could get results no matter whether any arguments are provided.
+
+```{r}
+fetch_census_data()
+fetch_census_data(cat_vars = c("SCHL"), num_vars = c("GRPIP"), geo_vars = c("DIVISION"), geo_sub = "3", years = c(2014, 2017))
+```
+
+One of the bigger problems we came across was that not all census years have the variables we are using. We get an error response, that we handle by warning the user. The proper course of action would then be for the user grab two or more tibbles with separate calls, then row bind them. Our code to handle this is as follows:
+
+```         
+if(census_resp$status_code != 200){
+  stop(paste("One or more selected variables is not included in the years you have selected. Please consult the census microdata documentation to be sure the years you select support your chosen variables. The API response for year ", 
+             year, 
+             "failed to recognize variable", 
+             strsplit(rawToChar(census_resp$content), " ")[[1]][5]))
+}
+```
+
+## Variable Factorization Code
+
+Our code to factorize variables consists of 3 steps: use the API to fetch variable raw information, decode and parse the information into a list, and use the list to factorize the variable. Our API call and parsing is similar here to how we fetch the data. We take the names (keys) of the list as our levels and the values as the levels.
+
+```         
+factor(strings, levels = names(mapping), labels = as.character(mapping))
+```
+
+For time, the factorization is a bit more interesting, since we're not creating a factor despite the variables being categorical for any practical purpose. We decided for ease of calculation and consistency to use 24-hour time in hhmm format (where sometimes half-minutes occur due to intervals that are an odd number of minutes, e.g. 100 maps to 1:00PM to 1:39PM). Below are some snippets of code that handle string parsing and conversion to a numeric column.
+
+```         
+#here strings is a list where the names are levels of time and the values are labels from the census website
+begin_times_raw <- substring(strings, 1, 10) |> 
+  str_replace_all(c("a\\.m\\." = "AM", "p\\.m\\." = "PM"))
+begin_times <- as.numeric(format(strptime(begin_times_raw, format = "%I:%M %p"), "%H%M"))
+  
+end_times_raw <- substring(strings, 14, 25) |> 
+  str_replace_all(c("a\\.m\\." = "AM", "p\\.m\\." = "PM"))
+end_times <- as.numeric(format(strptime(end_times_raw, format = "%I:%M %p"), "%H%M"))
+
+times_converted <- end_times - .5 * (end_times - begin_times)
+names(times_converted) <- names(strings)
+```
+
+```         
+convert_census_time_strings <- function(strings, var){
+  times_converted <- extract_var_mappings(var) |> 
+    process_census_time_mapping()
+  return(sapply(strings, function(x) times_converted[x]))
+}
+```
+
+## Testing Everything Together
+
+Suppose we wanted to investigate when and how individuals arrive at work based on their gross rent as percentage of household income over the previous 12 months, using 3 of the most recent available years. We could do the following:
+
+```{r}
+test_tbl <- fetch_census_data(years = c(2019, 2021, 2022), cat_vars = c("JWTRNS"), num_vars = c("GRPIP", "JWAP"))
+
+summary(test_tbl, c("GRPIP", "JWAP"), c("JWTRNS"))
+plot(test_tbl, "GRPIP", "JWTRNS")
 ```

@@ -8,7 +8,7 @@ source("./scripts/cat_var_mapping_tools.R")
 
 PUMS_URL_MAIN_STUB <- "https://api.census.gov/data/"
 PUMS_URL_ACS_STUB <- "/acs/acs1/pums"
-PUMS_URL_QUERYSTRING_STUB <- "?for=state:02&get=PWGTP"
+PUMS_URL_QUERYSTRING_STUB <- "?get=PWGTP"
 
 DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
@@ -28,7 +28,7 @@ fetch_census_raw <- function(year=2022, varstring="", geo_subset = ""){
   prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
   if(nchar(varstring) > 0){prepared_census_url <-  paste(prepared_census_url, varstring, sep = ",")}
   if (nchar(geo_subset) > 0) {prepared_census_url <- paste(prepared_census_url, "&", geo_subset, sep = "")}
-  
+
   census_resp <-GET(prepared_census_url)  
   
   if(census_resp$status_code != 200){
@@ -121,7 +121,7 @@ fetch_census_data <- function(
         set_geo <- "for=region:*" 
       }
     } else if ("DIVISION" %in% geo_vars_checked) {
-      if (!is.null(goe_sub)) {
+      if (!is.null(geo_sub)) {
         set_geo <- paste0("for=division:", geo_sub)  
       } else {
         set_geo <- "for=division:*" 
@@ -141,5 +141,3 @@ fetch_census_data <- function(
   
   return(map_dfr(years_checked, fetch_census_single_year))
 }
-
-test <- fetch_census_data(num_vars = c("JWDP"), cat_vars = c("SCHL"), years = c(2012, 2021), geo_sub = "state:11")

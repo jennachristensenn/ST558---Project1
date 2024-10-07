@@ -27,21 +27,11 @@ summary.census <- function(census_tbl = test, num_vars, cat_vars){
   
 }
 
-test_summary <- summary.census(test, num_vars = c("GASP", "AGEP"), cat_vars = c("FER", "SEX"))
-print(test_summary)
-
-
-
-
-
-
  # plot funtion
-plot.census <- function(num_vars="AGEP", cat_vars="FER") {
-  ggplot(test,
-       aes(x = get(cat_vars), y = get(num_vars), weight = PWGTP)) +
+plot.census <- function(tbl_in, num_vars="AGEP", cat_vars="FER") {
+  ggplot(tbl_in,
+       aes(x = pull(tbl_in, cat_vars), y = pull(tbl_in, num_vars), weight = PWGTP)) +
     geom_boxplot() +
     labs(title = paste(num_vars, "by", cat_vars),
          x = cat_vars, y = num_vars)
 }
-
-plot.census()

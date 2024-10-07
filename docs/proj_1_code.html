@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.555">
+<meta name="generator" content="quarto-1.5.57">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -19,6 +19,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -101,11 +135,195 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="project-1" class="level2">
 <h2 class="anchored" data-anchor-id="project-1">Project 1</h2>
-<p>Main place to document narrative and finished code</p>
+<section id="jenna-christensen-and-matthew-wasyluk" class="level4">
+<h4 class="anchored" data-anchor-id="jenna-christensen-and-matthew-wasyluk">Jenna Christensen and Matthew Wasyluk</h4>
+<p>In this project, we use the US Census Microdata API to test our knowledge of API querying, data manipulation in Tidyverse, and other related tools and skills in R. We’ll begin by importing the script files where we wrote our code.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"./scripts/api_tools.R"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'purrr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following object is masked from 'package:jsonlite':
+
+    flatten</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"./scripts/summary_function.R"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
 </section>
 <section id="fetching-data-from-the-census-api" class="level2">
 <h2 class="anchored" data-anchor-id="fetching-data-from-the-census-api">Fetching Data from the Census API</h2>
-<p>The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables we select. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, and categorical variables as arguments. We check them and warn the user if their input is invalid.</p>
+<p>The Census microdata API has a pretty straightforward endpoint. We make a GET request with URL parameters to specify which variables and geographic levels to return. We have a separate R script (/scripts/api_tools.r) that holds the entire functions. One of them fetches raw data, one converts raw data into a tibble, and one dispatches the process when a user provides years, numeric variables, categorical variables, and geographic options as arguments. We check them and warn the user if their input is invalid. Below is an example of the warning and check code we wrote.</p>
+<pre><code>cat_vars_checked &lt;- cat_vars[cat_vars %in% AVAILABLE_CAT_VARS]
+cat_vars_failed &lt;- cat_vars[!(cat_vars %in% AVAILABLE_CAT_VARS)]
+if(length(cat_vars_failed &gt; 0)){
+  warning("Invalid categorical variable(s) excluded: ", paste(cat_vars_failed))
+}
+if(length(num_vars_checked) == 0){
+  warning("No valid categorical variables supplied. Using default SEX.")
+  cat_vars_checked = DEFAULT_CAT_VARS
+}</code></pre>
+<p>And here is a portion of our code that builds the URL. It combines several strings that are placed using user input.</p>
+<pre><code>prepared_census_url &lt;- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
+if(nchar(varstring) &gt; 0){prepared_census_url &lt;-  paste(prepared_census_url, varstring, sep = ",")}
+if (nchar(geo_subset) &gt; 0) {prepared_census_url &lt;- paste(prepared_census_url, "&amp;", geo_subset, sep = "")}</code></pre>
+<p>Once fetched, the raw JSON response has to be decoded and parsed into a list. We can turn it into a tibble from there.</p>
+<pre><code>census_tbl_in_progress &lt;- rawToChar(census_raw) |&gt;  fromJSON()
+census_tbl &lt;- as_tibble(census_tbl_in_progress[-1,]) 
+colnames(census_tbl) &lt;- census_tbl_in_progress[1,]</code></pre>
+<p>The next step is formatting the variables appropriately. Dplyr helps a lot here.</p>
+<pre><code>census_tbl &lt;- census_tbl |&gt; 
+  mutate(across(all_of(num_col), as.numeric),
+         across(all_of(time_col), ~ as.numeric(convert_census_time_strings(.x, cur_column()))),
+         across(all_of(cat_col), ~ factorize_column(.x, cur_column())))</code></pre>
+<p>Factorize_column and convert_census_time_strings are custom functions that return factors and numeric 24-hour times as hhmm, respectively. They are defined along with some helper functions in /scripts/cat_var_mapping_tools.R. We’ll get to that later in this document.</p>
+<p>In all of this, we set defaults where appropriate. The user could get results no matter whether any arguments are provided.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch_census_data</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in fetch_census_data(): No valid geographic variables supplied. Using
+default ALL.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: The `x` argument of `as_tibble.matrix()` must have unique column names if
+`.name_repair` is omitted as of tibble 2.0.0.
+ℹ Using compatibility `.name_repair`.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6,972 × 8
+   PWGTP  AGEP SEX    REGION DIVISION ST    state  YEAR
+   &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;  &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt;
+ 1    55    58 Male   4      9        02    02     2022
+ 2     8    27 Female 4      9        02    02     2022
+ 3    63    50 Male   4      9        02    02     2022
+ 4   101    49 Female 4      9        02    02     2022
+ 5    17    57 Female 4      9        02    02     2022
+ 6    62    89 Male   4      9        02    02     2022
+ 7    27    39 Female 4      9        02    02     2022
+ 8    29    42 Male   4      9        02    02     2022
+ 9     5    28 Male   4      9        02    02     2022
+10    10    16 Male   4      9        02    02     2022
+# ℹ 6,962 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">fetch_census_data</span>(<span class="at">cat_vars =</span> <span class="fu">c</span>(<span class="st">"SCHL"</span>), <span class="at">num_vars =</span> <span class="fu">c</span>(<span class="st">"GRPIP"</span>), <span class="at">geo_vars =</span> <span class="fu">c</span>(<span class="st">"DIVISION"</span>), <span class="at">geo_sub =</span> <span class="st">"3"</span>, <span class="at">years =</span> <span class="fu">c</span>(<span class="dv">2014</span>, <span class="dv">2017</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 938,248 × 6
+   PWGTP GRPIP SCHL                                      DIVISION division  YEAR
+   &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;                                     &lt;chr&gt;    &lt;chr&gt;    &lt;dbl&gt;
+ 1    96     0 Some college, but less than 1 year        3        3         2014
+ 2   103     0 Regular high school diploma               3        3         2014
+ 3    17     0 1 or more years of college credit, no de… 3        3         2014
+ 4    19     0 1 or more years of college credit, no de… 3        3         2014
+ 5   135    12 Bachelor's degree                         3        3         2014
+ 6    17     0 Regular high school diploma               3        3         2014
+ 7    60     0 Regular high school diploma               3        3         2014
+ 8    95     0 Grade 11                                  3        3         2014
+ 9    71     0 1 or more years of college credit, no de… 3        3         2014
+10    64     0 1 or more years of college credit, no de… 3        3         2014
+# ℹ 938,238 more rows</code></pre>
+</div>
+</div>
+<p>One of the bigger problems we came across was that not all census years have the variables we are using. We get an error response, that we handle by warning the user. The proper course of action would then be for the user grab two or more tibbles with separate calls, then row bind them. Our code to handle this is as follows:</p>
+<pre><code>if(census_resp$status_code != 200){
+  stop(paste("One or more selected variables is not included in the years you have selected. Please consult the census microdata documentation to be sure the years you select support your chosen variables. The API response for year ", 
+             year, 
+             "failed to recognize variable", 
+             strsplit(rawToChar(census_resp$content), " ")[[1]][5]))
+}</code></pre>
+</section>
+<section id="variable-factorization-code" class="level2">
+<h2 class="anchored" data-anchor-id="variable-factorization-code">Variable Factorization Code</h2>
+<p>Our code to factorize variables consists of 3 steps: use the API to fetch variable raw information, decode and parse the information into a list, and use the list to factorize the variable. Our API call and parsing is similar here to how we fetch the data. We take the names (keys) of the list as our levels and the values as the levels.</p>
+<pre><code>factor(strings, levels = names(mapping), labels = as.character(mapping))</code></pre>
+<p>For time, the factorization is a bit more interesting, since we’re not creating a factor despite the variables being categorical for any practical purpose. We decided for ease of calculation and consistency to use 24-hour time in hhmm format (where sometimes half-minutes occur due to intervals that are an odd number of minutes, e.g.&nbsp;100 maps to 1:00PM to 1:39PM). Below are some snippets of code that handle string parsing and conversion to a numeric column.</p>
+<pre><code>#here strings is a list where the names are levels of time and the values are labels from the census website
+begin_times_raw &lt;- substring(strings, 1, 10) |&gt; 
+  str_replace_all(c("a\\.m\\." = "AM", "p\\.m\\." = "PM"))
+begin_times &lt;- as.numeric(format(strptime(begin_times_raw, format = "%I:%M %p"), "%H%M"))
+  
+end_times_raw &lt;- substring(strings, 14, 25) |&gt; 
+  str_replace_all(c("a\\.m\\." = "AM", "p\\.m\\." = "PM"))
+end_times &lt;- as.numeric(format(strptime(end_times_raw, format = "%I:%M %p"), "%H%M"))
+
+times_converted &lt;- end_times - .5 * (end_times - begin_times)
+names(times_converted) &lt;- names(strings)</code></pre>
+<pre><code>convert_census_time_strings &lt;- function(strings, var){
+  times_converted &lt;- extract_var_mappings(var) |&gt; 
+    process_census_time_mapping()
+  return(sapply(strings, function(x) times_converted[x]))
+}</code></pre>
+</section>
+<section id="testing-everything-together" class="level2">
+<h2 class="anchored" data-anchor-id="testing-everything-together">Testing Everything Together</h2>
+<p>Suppose we wanted to investigate when and how individuals arrive at work based on their gross rent as percentage of household income over the previous 12 months, using 3 of the most recent available years. We could do the following:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>test_tbl <span class="ot">&lt;-</span> <span class="fu">fetch_census_data</span>(<span class="at">years =</span> <span class="fu">c</span>(<span class="dv">2019</span>, <span class="dv">2021</span>, <span class="dv">2022</span>), <span class="at">cat_vars =</span> <span class="fu">c</span>(<span class="st">"JWTRNS"</span>), <span class="at">num_vars =</span> <span class="fu">c</span>(<span class="st">"GRPIP"</span>, <span class="st">"JWAP"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in fetch_census_data(years = c(2019, 2021, 2022), cat_vars =
+c("JWTRNS"), : No valid geographic variables supplied. Using default ALL.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(test_tbl, <span class="fu">c</span>(<span class="st">"GRPIP"</span>, <span class="st">"JWAP"</span>), <span class="fu">c</span>(<span class="st">"JWTRNS"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$`Numeric Variable Summary`
+$`Numeric Variable Summary`[[1]]
+# A tibble: 20,046 × 13
+   PWGTP GRPIP  JWAP JWTRNS         REGION DIVISION ST    state  YEAR GRPIP_mean
+   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;fct&gt;          &lt;chr&gt;  &lt;chr&gt;    &lt;chr&gt; &lt;chr&gt; &lt;dbl&gt;      &lt;dbl&gt;
+ 1   275     0  1942 Walked         4      9        2     2      2019       9.09
+ 2    54     0   447 Walked         4      9        2     2      2019       9.09
+ 3    15     0    NA N/A (not a wo… 4      9        2     2      2019       9.09
+ 4     6     0  1242 Walked         4      9        2     2      2019       9.09
+ 5    42     0  2317 &lt;NA&gt;           4      9        2     2      2019       9.09
+ 6    86     0   717 &lt;NA&gt;           4      9        2     2      2019       9.09
+ 7   136     0  2252 &lt;NA&gt;           4      9        2     2      2019       9.09
+ 8    21     0   342 Walked         4      9        2     2      2019       9.09
+ 9     8     0    NA N/A (not a wo… 4      9        2     2      2019       9.09
+10    34     0    NA N/A (not a wo… 4      9        2     2      2019       9.09
+# ℹ 20,036 more rows
+# ℹ 3 more variables: GRPIP_sd &lt;dbl&gt;, JWAP_mean &lt;dbl&gt;, JWAP_sd &lt;dbl&gt;
+
+
+$`Categorical Variable Counts`
+$`Categorical Variable Counts`[[1]]
+# A tibble: 5 × 2
+  JWTRNS                                                                   count
+  &lt;fct&gt;                                                                    &lt;int&gt;
+1 Worked from home                                                           708
+2 N/A (not a worker-not in the labor force, including persons under 16 ye… 11348
+3 Other method                                                               619
+4 Walked                                                                    1271
+5 &lt;NA&gt;                                                                      6100</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(test_tbl, <span class="st">"GRPIP"</span>, <span class="st">"JWTRNS"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Computation failed in `stat_boxplot()`.
+Caused by error in `loadNamespace()`:
+! there is no package called 'quantreg'</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="proj_1_code_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
 
 
 </section>
@@ -146,18 +364,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -189,7 +396,29 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp('/' + window.location.host + '/');
@@ -197,7 +426,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
