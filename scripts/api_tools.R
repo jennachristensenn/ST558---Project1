@@ -14,7 +14,7 @@ DEFAULT_YEARS <- c(2022)
 #PWGTP is always included so is in base querystring stub
 DEFAULT_NUM_VARS <- c("AGEP")
 DEFAULT_CAT_VARS <- c("SEX")
-DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
+#DEFAULT_GEO_VARS <- c("REGION", "DIVISION", "ST")
 
 #account for lack of 2020 data on site, then compare years as character for consistency
 AVAILABLE_YEARS <- as.character(c(seq(2010, 2019), seq(2021, 2022)))
@@ -22,7 +22,9 @@ AVAILABLE_NUM_VARS <- c("PWGTP", "AGEP", "GASP", "GRPIP", "JWAP", "JWDP", "JWMNP
 AVAILABLE_TIME_VARS <- c("JWAP", "JWDP")
 AVAILABLE_CAT_VARS <- c("FER", "HHL", "HISPEED", "JWTRNS", "SCH", "SCHL", "SEX")
 AVAILABLE_GEO_VARS <- c("REGION", "DIVISION", "ST")
- 
+
+
+# function to fetch raw data 
 fetch_census_raw <- function(year=2022, varstring="", geo_subset = ""){
   
   prepared_census_url <- paste(PUMS_URL_MAIN_STUB, year, PUMS_URL_ACS_STUB, PUMS_URL_QUERYSTRING_STUB, sep = "")
@@ -31,6 +33,7 @@ fetch_census_raw <- function(year=2022, varstring="", geo_subset = ""){
 
   census_resp <-GET(prepared_census_url)  
   
+  # error to handle unavailable data
   if(census_resp$status_code != 200){
     stop(paste("One or more selected variables is not included in the years you have selected. Please consult the census microdata documentation to be sure the years you select support your chosen variables. The API response for year ", 
                year, 
@@ -41,6 +44,7 @@ fetch_census_raw <- function(year=2022, varstring="", geo_subset = ""){
   return(census_resp$content)
 }
 
+# function to convert raw data into a tibble
 parse_census_response <- function(census_raw){
   census_tbl_in_progress <- rawToChar(census_raw) |>  fromJSON()
   census_tbl <- as_tibble(census_tbl_in_progress[-1,]) 
@@ -59,6 +63,7 @@ parse_census_response <- function(census_raw){
   return(census_tbl)
 }
 
+# final function to checked for valid user inputs and piece everything together
 fetch_census_data <- function(
     years=DEFAULT_YEARS, 
     num_vars=DEFAULT_NUM_VARS, 
@@ -92,19 +97,16 @@ fetch_census_data <- function(
   }
   if(length(years_checked) == 0){
     warning("No valid years supplied. Using default 2022.")
-    years_checked = DEFAULT_CAT_VARS
+    years_checked = DEFAULT_YEARS
   }
   
   geo_vars_checked <- geo_vars[geo_vars %in% AVAILABLE_GEO_VARS]
   geo_vars_failed <- geo_vars[!(geo_vars %in% AVAILABLE_GEO_VARS)]
-  if(length(geo_vars_failed) > 0){
+  if (length(geo_vars_failed) > 0) {
     warning("Invalid geographic variable(s) excluded: ", paste(geo_vars_failed))
   }
-  if(length(geo_vars_checked) == 0){
-    warning("No valid geographic variables supplied. Using default ALL.")
-    geo_vars_checked = DEFAULT_GEO_VARS
-  }
   
+  # piece to handle the subset geography selection and default
   if (is.null(geo_vars) || length(geo_vars_checked) == 0) {
     set_geo <- "for=state:02"  
   } else {

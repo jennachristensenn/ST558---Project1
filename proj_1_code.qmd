@@ -2,11 +2,10 @@
 title: "ST558 - Project 1"
 format: html
 editor: visual
+authors: Jenna Christensen and Matthew Wasyluk
 ---
 
 ## Project 1
-
-#### Jenna Christensen and Matthew Wasyluk
 
 In this project, we use the US Census Microdata API to test our knowledge of API querying, data manipulation in Tidyverse, and other related tools and skills in R. We'll begin by importing the script files where we wrote our code.
 
@@ -108,13 +107,51 @@ convert_census_time_strings <- function(strings, var){
 }
 ```
 
+## Summary Function and Plotting
+
+After creating the working URL with proper specification we wrote the summary function to calculate the sample mean and standard deviation, as well as counts for the categorical variables. We computed the numeric calculations using PWGTP as the weights_vector shown below. Both were added to a list under "Numeric Variable Summary" and "Categorical Variable Counts."
+
+```
+  num_summary <- census_tbl |>
+    mutate(across(all_of(num_vars),
+                  .fns = list(
+                    mean = function(x) {sum(x*PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE)},
+                    sd = function(x) {sqrt(sum(x^2*PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE) - 
+                           (sum(x*PWGTP, na.rm = TRUE) / sum(PWGTP, na.rm = TRUE))^2)}),
+                    .names = "{.col}_{.fn}")) |>
+    list()
+  cat_summary <- census_tbl |>
+    group_by(across(all_of(cat_vars))) |>
+    summarize(count = n()) |>
+    list() 
+```
+
+We then plotted the summary function using the provided code and some additional arguments to include a proper title and axis labels.
+
+```
+  ggplot(test,
+       aes(x = get(cat_vars), y = get(num_vars), weight = PWGTP)) +
+    geom_boxplot() +
+    labs(title = paste(num_vars, "by", cat_vars),
+         x = cat_vars, y = num_vars)
+```
+
 ## Testing Everything Together
 
 Suppose we wanted to investigate when and how individuals arrive at work based on their gross rent as percentage of household income over the previous 12 months, using 3 of the most recent available years. We could do the following:
 
 ```{r}
-test_tbl <- fetch_census_data(years = c(2019, 2021, 2022), cat_vars = c("JWTRNS"), num_vars = c("GRPIP", "JWAP"))
+test_tbl_1 <- fetch_census_data(years = c(2019, 2021, 2022), cat_vars = c("JWTRNS"), num_vars = c("GRPIP", "JWAP"))
 
-summary(test_tbl, c("GRPIP", "JWAP"), c("JWTRNS"))
-plot(test_tbl, "GRPIP", "JWTRNS")
+summary.census(test_tbl_1, c("GRPIP", "JWAP"), c("JWTRNS"))
 ```
+
+We could also look into the spread of ages recorded in 2022 between males and females.
+
+```{r}
+test_tbl <- fetch_census_data(years = c(2022), cat_vars = c("SEX"), num_vars = c("AGEP"))
+
+summary.census(test_tbl, c("AGEP"), c("SEX"))
+plot.census(test_tbl,"AGEP", "SEX")
+```
+
